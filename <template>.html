@@ -1,0 +1,66 @@
+<template>
+  <div class="flex-1 overflow-y-auto p-4 flex flex-col transition-all duration-300"
+    :class="messages.length != 0 ? 'space-y-4' : 'justify-center items-center text-center p-6'">
+    <template v-if="messages.length != 0">
+      <template v-for="message in messages" :key="message">
+        <div class="flex w-full justify-start" v-if="!message.isUser">
+          <div class="chat-bubble-bot flex flex-col" v-if="message.text.error">
+            <!-- <span>{{ message.text.answer }}</span> -->
+            <AdaptiveChatResponseComponent :apiResponse="message.text.answer" />
+            <span class="text-[10px] text-brand-text/50 self-end mt-1 font-mono select-none">
+              {{ message.time || '12:00' }}
+            </span>
+          </div>
+
+          <div class="chat-bubble-bot flex flex-col" v-else>
+            <div class="prose prose-invert prose-sm max-w-none markdown-content"
+              v-html="renderMarkDown(message.text.answer.answer)"></div>
+            <!-- <span>{{ message.text.answer.answer }}</span> -->
+            <!-- <AdaptiveChatResponseComponent :apiResponse="message.text.answer.answer" /> -->
+            <span class="text-[10px] text-brand-text/50 self-end mt-1 font-mono select-none">
+              {{ message.time || '12:00' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="flex w-full justify-end" v-if="message.isUser">
+          <div class="chat-bubble-user flex flex-col">
+            <span>{{ message.text }}</span>
+            <span class="text-[10px] text-black/50 self-end mt-1 font-mono select-none">
+              {{ message.time || '12:00' }}
+            </span>
+          </div>
+        </div>
+      </template>
+    </template>
+
+    <div v-else class="max-w-sm flex flex-col items-center animate-fade-in">
+      <div class="logo-bg-rounded">
+        <img src="/src/assets/Ulfa_2_thinking.png" alt="Ulfa Assistant Large Logo"
+          class="w-full h-full object-contain" />
+      </div>
+      <h1 class="text-3xl font-extrabold text-brand-text tracking-tight leading-tight mb-3">
+        Let <span class="text-brand-primary">ULFA</span> help with anything
+      </h1>
+      <p class="text-sm text-brand-text/60 font-medium">Fast answers. Powered by AI.</p>
+    </div>
+  </div>
+</template>
+<script>
+  // import AdaptiveChatResponseComponent from './AdaptiveChatResponse.component.vue'
+  import { marked } from 'marked'
+  export default {
+    name: 'ChatBodyComponent',
+    props: ['messages'],
+    methods: {
+      renderMarkDown(rawText) {
+        console.log(marked(rawText))
+        if (!rawText) return ''
+        return marked(rawText, {
+          breaks: true,
+        })
+      },
+    },
+    //   components: { AdaptiveChatResponseComponent },
+  }
+</script>
