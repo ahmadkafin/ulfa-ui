@@ -1,8 +1,8 @@
 <template>
   <div
     ref="chatContainer"
-    class="flex-1 overflow-y-auto p-4 flex flex-col transition-all duration-300"
-    :class="messages.length != 0 ? 'space-y-4' : 'justify-center items-center text-center p-6'"
+    class="flex-1 min-h-0 w-full overflow-y-auto p-3 sm:p-4 flex flex-col transition-all duration-300"
+    :class="messages.length != 0 ? 'space-y-4' : 'items-center text-center p-3 sm:p-4'"
   >
     <template v-if="messages.length != 0">
       <template v-for="message in messages" :key="message.id || message">
@@ -289,7 +289,7 @@
     </template>
 
     <!-- Empty State / Layar Selamat Datang -->
-    <div v-else class="max-w-sm flex flex-col items-center animate-fade-in">
+    <div v-else class="my-auto w-full max-w-sm flex flex-col items-center animate-fade-in py-2">
       <div class="logo-bg-rounded">
         <img
           src="/src/assets/Ulfa_2_thinking.png"
@@ -297,19 +297,25 @@
           class="w-full h-full object-contain"
         />
       </div>
-      <h1 class="text-3xl font-extrabold text-brand-text tracking-tight leading-tight mb-2">
+      <h1
+        class="text-xl sm:text-2xl font-extrabold text-brand-text tracking-tight leading-tight mb-1"
+      >
         Let <span class="text-brand-primary">ULFA</span> help with anything
       </h1>
-      <p class="text-sm text-brand-text/60 font-medium mb-6">Fast answers. Powered by AI.</p>
+      <p class="text-xs sm:text-sm text-brand-text/60 font-medium mb-3">
+        Fast answers. Powered by AI.
+      </p>
 
       <!-- Quick Prompt Suggestions -->
-      <div v-if="quickPrompts && quickPrompts.length > 0" class="flex flex-col gap-2 w-full">
-        <p class="text-xs text-brand-text/50 font-medium mb-0.5 text-left">Contoh pertanyaan:</p>
+      <div v-if="quickPrompts && quickPrompts.length > 0" class="flex flex-col gap-1.5 w-full">
+        <p class="text-[11px] sm:text-xs text-brand-text/50 font-medium mb-0.5 text-left">
+          Contoh pertanyaan:
+        </p>
         <button
           v-for="(prompt, idx) in quickPrompts"
           :key="idx"
           @click="$emit('selectPrompt', prompt)"
-          class="text-left text-xs bg-brand-surface/70 hover:bg-brand-surface border border-brand-border/60 hover:border-brand-primary/50 text-brand-text/80 hover:text-brand-primary px-3.5 py-2.5 rounded-xl transition shadow-sm flex items-center justify-between group cursor-pointer"
+          class="text-left text-xs bg-brand-surface/70 hover:bg-brand-surface border border-brand-border/60 hover:border-brand-primary/50 text-brand-text/80 hover:text-brand-primary px-3 py-2 rounded-xl transition shadow-sm flex items-center justify-between group cursor-pointer"
         >
           <span>{{ prompt }}</span>
           <span class="text-brand-text/30 group-hover:text-brand-primary transition">→</span>
