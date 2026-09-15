@@ -15,9 +15,7 @@
         ></span>
       </div>
       <div>
-        <h3 class="text-sm font-semibold text-brand-text tracking-wide leading-none mb-1">
-          Ulfa Assistant
-        </h3>
+        <h3 class="text-sm font-semibold text-brand-text tracking-wide leading-none mb-1">Ulfa</h3>
         <p
           class="text-xs font-medium leading-none transition-colors duration-300"
           :class="isConnected ? 'text-brand-primary' : 'text-rose-400'"
