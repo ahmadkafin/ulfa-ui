@@ -12,7 +12,7 @@
           <div
             class="w-10 h-10 rounded-full bg-brand-primary flex items-center justify-center shrink-0"
           >
-            <img src="@/assets/Ulfa_2_thinking.png" class="w-8 h-8 object-contain" />
+            <img src="@/assets/Ulfabot-2-think.png" class="w-8 h-8 object-contain" />
           </div>
 
           <!-- Wrapper Stepper + Bubble -->
@@ -292,7 +292,7 @@
     <div v-else class="my-auto w-full max-w-sm flex flex-col items-center animate-fade-in py-2">
       <div class="logo-bg-rounded">
         <img
-          src="/src/assets/Ulfa_2_thinking.png"
+          src="/src/assets/Ulfabot-2-think.png"
           alt="Ulfa Assistant Large Logo"
           class="w-full h-full object-contain"
         />
