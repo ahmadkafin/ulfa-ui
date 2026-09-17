@@ -4,7 +4,7 @@
       <div class="relative">
         <div class="status-indicator-wrapper">
           <img
-            src="/src/assets/Ulfabot-1-front.png"
+            src="/src/assets/Ulfa-2-front-face.png"
             alt="Ulfa Avatar"
             class="w-full h-full rounded-full object-cover"
           />
