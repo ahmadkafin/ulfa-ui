@@ -341,11 +341,18 @@ export default {
     },
   },
   emits: ['selectPrompt'],
+  data() {
+    return {
+      lastMessageCount: 0,
+    }
+  },
   watch: {
     messages: {
       deep: true,
-      handler() {
-        this.scrollToBottom()
+      handler(newVal) {
+        const force = newVal.length !== this.lastMessageCount
+        this.lastMessageCount = newVal.length
+        this.scrollToBottom(force)
       },
     },
   },
@@ -360,11 +367,14 @@ export default {
         breaks: true,
       })
     },
-    scrollToBottom() {
+    scrollToBottom(force = false) {
       this.$nextTick(() => {
         const el = this.$refs.chatContainer
         if (el) {
-          el.scrollTop = el.scrollHeight
+          const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+          if (force || isNearBottom) {
+            el.scrollTop = el.scrollHeight
+          }
         }
       })
     },

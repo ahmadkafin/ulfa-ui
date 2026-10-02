@@ -33,12 +33,17 @@ export default {
         'Bagaimana cara registrasi akun baru?',
         'Bagaimana kondisi pipa di wilayah SOR 1?',
       ],
+      typingQueue: '',
+      typingTimer: null,
+      isBackendDone: false,
+      finalFullContent: null,
     }
   },
   mounted() {
     this.initSocket()
   },
   beforeUnmount() {
+    this.clearTypingState()
     if (this.socket) {
       this.socket.disconnect()
     }
@@ -86,6 +91,8 @@ export default {
       const text = typeof payload === 'string' ? payload.trim() : ''
       if (!text || this.isTyping) return
 
+      this.clearTypingState()
+
       this.addMessage({
         id: 'user-' + Date.now(),
         text: text,
@@ -107,6 +114,9 @@ export default {
       })
 
       this.isTyping = true
+      this.typingQueue = ''
+      this.isBackendDone = false
+      this.finalFullContent = null
 
       console.log('Mengirim pertanyaan:', text)
       if (this.socket && this.socket.connected) {
@@ -203,29 +213,32 @@ export default {
 
         case 'token': {
           const chunk = eventData.content !== undefined ? eventData.content : eventData.text || ''
-          if (currentMessage) {
-            currentMessage.text += chunk
+          if (chunk) {
+            this.typingQueue += chunk
+            this.startTypingStream()
           }
           break
         }
 
         case 'done': {
-          console.log('AI selesai menjawab!')
-          this.isTyping = false
-          if (currentMessage) {
-            if (eventData.full_content) {
-              currentMessage.text = eventData.full_content
-            }
-            currentMessage.isStreaming = false
-            if (currentMessage.steps) {
-              currentMessage.steps.forEach((s) => {
-                if (s.status === 'running') {
-                  s.status = 'success'
-                }
-              })
+          console.log('AI selesai menjawab dari backend!')
+          this.isBackendDone = true
+          if (eventData.full_content) {
+            this.finalFullContent = eventData.full_content
+            const currentMsg = this.messages.find((m) => m.id === this.currentBotMessageId)
+            if (currentMsg) {
+              const currentTotal = (currentMsg.text || '') + this.typingQueue
+              if (eventData.full_content.startsWith(currentTotal)) {
+                this.typingQueue += eventData.full_content.slice(currentTotal.length)
+              }
             }
           }
-          this.currentBotMessageId = null
+
+          if (!this.typingQueue || this.typingQueue.length === 0) {
+            this.finishTypingStream()
+          } else {
+            this.startTypingStream()
+          }
           break
         }
 
@@ -237,6 +250,7 @@ export default {
             'Gagal memproses permintaan.'
           console.warn('Backend mengirim pesan status error:', errorMsg)
 
+          this.clearTypingState()
           if (currentMessage && currentMessage.steps) {
             const runningStep = currentMessage.steps.find((s) => s.status === 'running')
             if (runningStep) {
@@ -253,7 +267,87 @@ export default {
       }
     },
 
+    startTypingStream() {
+      if (this.typingTimer) return
+
+      const TICK_INTERVAL = 18 // ms (~55 ticks/detik)
+
+      this.typingTimer = setInterval(() => {
+        const currentMessage = this.messages.find((m) => m.id === this.currentBotMessageId)
+        if (!currentMessage) {
+          this.clearTypingState()
+          return
+        }
+
+        if (this.typingQueue.length > 0) {
+          let stepSize
+          const qLen = this.typingQueue.length
+
+          if (this.isBackendDone) {
+            if (qLen > 100) stepSize = 8
+            else if (qLen > 50) stepSize = 5
+            else if (qLen > 20) stepSize = 3
+            else if (qLen > 10) stepSize = 2
+            else stepSize = 1
+          } else {
+            if (qLen > 120) stepSize = 6
+            else if (qLen > 60) stepSize = 4
+            else if (qLen > 25) stepSize = 2
+            else stepSize = 1
+          }
+
+          const chars = this.typingQueue.slice(0, stepSize)
+          this.typingQueue = this.typingQueue.slice(stepSize)
+          currentMessage.text = (currentMessage.text || '') + chars
+        }
+
+        if (this.typingQueue.length === 0 && this.isBackendDone) {
+          this.finishTypingStream()
+        }
+      }, TICK_INTERVAL)
+    },
+
+    finishTypingStream() {
+      this.clearTypingTimer()
+      const currentMessage = this.messages.find((m) => m.id === this.currentBotMessageId)
+
+      if (currentMessage) {
+        if (this.finalFullContent) {
+          currentMessage.text = this.finalFullContent
+        }
+        currentMessage.isStreaming = false
+        if (currentMessage.steps) {
+          currentMessage.steps.forEach((s) => {
+            if (s.status === 'running') {
+              s.status = 'success'
+            }
+          })
+        }
+      }
+
+      this.isTyping = false
+      this.currentBotMessageId = null
+      this.typingQueue = ''
+      this.isBackendDone = false
+      this.finalFullContent = null
+    },
+
+    clearTypingTimer() {
+      if (this.typingTimer) {
+        clearInterval(this.typingTimer)
+        this.typingTimer = null
+      }
+    },
+
+    clearTypingState() {
+      this.clearTypingTimer()
+      this.typingQueue = ''
+      this.isBackendDone = false
+      this.finalFullContent = null
+    },
+
     handleStreamError(errorMessage, isSystemError = true) {
+      this.clearTypingState()
       this.isTyping = false
       const currentMessage = this.messages.find((m) => m.id === this.currentBotMessageId)
       const errorText = errorMessage || 'Terjadi kesalahan saat memproses permintaan.'
@@ -283,6 +377,7 @@ export default {
     },
 
     clearChat() {
+      this.clearTypingState()
       this.messages = []
       this.isTyping = false
       this.currentBotMessageId = null
