@@ -35,6 +35,9 @@ export default {
       ],
       typingQueue: '',
       typingTimer: null,
+      progressTimer: null,
+      progressValue: 0,
+      progressMax: 0,
       isBackendDone: false,
       finalFullContent: null,
     }
@@ -109,6 +112,9 @@ export default {
         time: this.getCurrentTimeString(),
         isStreaming: true,
         isError: false,
+        hasFirstToken: false,
+        progress: 5,
+        progressLabel: 'Memahami pertanyaan...',
         steps: [],
         showSteps: true,
       })
@@ -117,6 +123,7 @@ export default {
       this.typingQueue = ''
       this.isBackendDone = false
       this.finalFullContent = null
+      this.startProgressPhase(5, 25, 'Memahami pertanyaan...')
 
       console.log('Mengirim pertanyaan:', text)
       if (this.socket && this.socket.connected) {
@@ -173,6 +180,15 @@ export default {
               status: 'running',
               time: this.getCurrentTimeString(),
             })
+
+            const toolStepsCount = currentMessage.steps.filter((s) => !s.isSynthesis).length
+            if (toolStepsCount <= 1) {
+              this.startProgressPhase(30, 68, toolDesc)
+            } else {
+              const minP = Math.min(55 + (toolStepsCount - 2) * 10, 75)
+              const maxP = Math.min(68 + (toolStepsCount - 1) * 6, 82)
+              this.startProgressPhase(minP, maxP, toolDesc)
+            }
           }
           break
         }
@@ -207,6 +223,7 @@ export default {
               status: 'running',
               time: this.getCurrentTimeString(),
             })
+            this.startProgressPhase(72, 95, 'Menyusun jawaban...')
           }
           break
         }
@@ -214,6 +231,7 @@ export default {
         case 'token': {
           const chunk = eventData.content !== undefined ? eventData.content : eventData.text || ''
           if (chunk) {
+            this.completeWaitingProgress()
             this.typingQueue += chunk
             this.startTypingStream()
           }
@@ -222,6 +240,7 @@ export default {
 
         case 'done': {
           console.log('AI selesai menjawab dari backend!')
+          this.completeWaitingProgress()
           this.isBackendDone = true
           if (eventData.full_content) {
             this.finalFullContent = eventData.full_content
@@ -332,6 +351,50 @@ export default {
       this.finalFullContent = null
     },
 
+    startProgressPhase(minPercent, maxPercent, label) {
+      const currentMessage = this.messages.find((m) => m.id === this.currentBotMessageId)
+      if (!currentMessage || currentMessage.hasFirstToken) return
+
+      this.progressValue = Math.max(this.progressValue, minPercent)
+      this.progressMax = Math.max(this.progressValue, Math.min(maxPercent, 99))
+      currentMessage.progress = Math.round(this.progressValue)
+      if (label) {
+        currentMessage.progressLabel = label
+      }
+
+      if (!this.progressTimer) {
+        this.progressTimer = setInterval(() => {
+          const msg = this.messages.find((m) => m.id === this.currentBotMessageId)
+          if (!msg || msg.hasFirstToken || !msg.isStreaming) {
+            this.clearProgressTimer()
+            return
+          }
+          if (this.progressValue < this.progressMax) {
+            const remaining = this.progressMax - this.progressValue
+            const increment = Math.max(0.5, remaining * 0.12)
+            this.progressValue = Math.min(this.progressMax, this.progressValue + increment)
+            msg.progress = Math.round(this.progressValue)
+          }
+        }, 300)
+      }
+    },
+
+    completeWaitingProgress() {
+      this.clearProgressTimer()
+      const currentMessage = this.messages.find((m) => m.id === this.currentBotMessageId)
+      if (currentMessage) {
+        currentMessage.hasFirstToken = true
+        currentMessage.progress = 100
+      }
+    },
+
+    clearProgressTimer() {
+      if (this.progressTimer) {
+        clearInterval(this.progressTimer)
+        this.progressTimer = null
+      }
+    },
+
     clearTypingTimer() {
       if (this.typingTimer) {
         clearInterval(this.typingTimer)
@@ -341,6 +404,9 @@ export default {
 
     clearTypingState() {
       this.clearTypingTimer()
+      this.clearProgressTimer()
+      this.progressValue = 0
+      this.progressMax = 0
       this.typingQueue = ''
       this.isBackendDone = false
       this.finalFullContent = null

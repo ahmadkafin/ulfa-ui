@@ -78,6 +78,32 @@
                 </button>
               </div>
 
+              <!-- Progress Bar Hybrid (di dalam kartu Alur Proses AI, sembunyi saat token pertama tiba) -->
+              <div
+                v-if="
+                  message.isStreaming && !message.hasFirstToken && !message.text && !message.isError
+                "
+                class="mt-2.5 pt-2 border-t border-brand-border/40"
+              >
+                <div class="flex items-center justify-between gap-2 mb-1.5 text-[11px]">
+                  <span class="text-brand-text/85 truncate font-medium">
+                    <span class="font-mono font-semibold text-brand-primary"
+                      >{{ message.progress ?? 0 }}%</span
+                    >
+                    <span class="mx-1 text-brand-text/40">&bull;</span>
+                    <span>{{ message.progressLabel || 'Memproses...' }}</span>
+                  </span>
+                </div>
+                <div
+                  class="w-full h-1.5 bg-brand-bg rounded-full overflow-hidden border border-brand-border/30"
+                >
+                  <div
+                    class="h-full bg-brand-primary rounded-full transition-all duration-300 ease-out"
+                    :style="{ width: (message.progress ?? 0) + '%' }"
+                  ></div>
+                </div>
+              </div>
+
               <!-- Stepper Body (Vertical Steps) -->
               <div v-show="message.showSteps !== false" class="mt-3 pl-1 pr-1 space-y-0 relative">
                 <div
@@ -206,34 +232,44 @@
               </div>
             </div>
 
-            <!-- 2. CHAT BUBBLE (HANYA BERISI BALASAN JAWABAN) -->
+            <!-- 1b. PROGRESS BAR WAITING (saat menunggu event/token pertama & belum ada Alur Proses AI) -->
             <div
               v-if="
-                message.text ||
-                (message.isStreaming && (!message.steps || message.steps.length === 0))
+                message.isStreaming &&
+                !message.hasFirstToken &&
+                !message.text &&
+                !message.isError &&
+                (!message.steps || message.steps.length === 0)
               "
+              class="bg-brand-surface/75 border border-brand-border/70 rounded-2xl px-3.5 py-2.5 shadow-sm backdrop-blur-sm min-w-[220px] max-w-full"
+            >
+              <div class="flex items-center gap-2 mb-1.5 text-xs">
+                <span class="w-2 h-2 rounded-full bg-brand-primary animate-pulse shrink-0"></span>
+                <span class="text-brand-text/90 truncate font-medium">
+                  <span class="font-mono font-semibold text-brand-primary"
+                    >{{ message.progress ?? 0 }}%</span
+                  >
+                  <span class="mx-1 text-brand-text/40">&bull;</span>
+                  <span>{{ message.progressLabel || 'Memahami pertanyaan...' }}</span>
+                </span>
+              </div>
+              <div
+                class="w-full h-1.5 bg-brand-bg rounded-full overflow-hidden border border-brand-border/30"
+              >
+                <div
+                  class="h-full bg-brand-primary rounded-full transition-all duration-300 ease-out"
+                  :style="{ width: (message.progress ?? 0) + '%' }"
+                ></div>
+              </div>
+            </div>
+
+            <!-- 2. CHAT BUBBLE (HANYA BERISI BALASAN JAWABAN) -->
+            <div
+              v-if="message.text || message.isError"
               class="chat-bubble-bot relative flex flex-col w-fit min-w-[100px] max-w-full"
               :class="{ '!border-rose-500/40 !bg-rose-950/20': message.isError }"
             >
               <div class="bubble-tail-left"></div>
-
-              <!-- Animasi Loading Dots ketika belum ada teks sama sekali dan tidak ada stepper -->
-              <div
-                v-if="
-                  message.isStreaming &&
-                  !message.text &&
-                  (!message.steps || message.steps.length === 0)
-                "
-                class="flex items-center justify-center gap-2 py-2 px-3 min-w-[64px]"
-              >
-                <span class="w-2.5 h-2.5 rounded-full bg-brand-primary animate-bounce"></span>
-                <span
-                  class="w-2.5 h-2.5 rounded-full bg-brand-primary animate-bounce [animation-delay:0.2s]"
-                ></span>
-                <span
-                  class="w-2.5 h-2.5 rounded-full bg-brand-primary animate-bounce [animation-delay:0.4s]"
-                ></span>
-              </div>
 
               <!-- Teks Balasan Jawaban (Markdown Stream) -->
               <div
