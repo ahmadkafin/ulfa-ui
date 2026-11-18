@@ -118,4 +118,21 @@ describe('App', () => {
     expect(botMsg.text).toBe('Berikut data pipa')
     expect(botMsg.isStreaming).toBe(false)
   })
+
+  it('renders links in chat responses with target="_blank" and rel="noopener noreferrer"', async () => {
+    const wrapper = mount(App)
+    const vm = wrapper.vm
+
+    vm.sendMessage('Dimana lokasi pipa?')
+    const mdResponse = 'Lihat di [Google Maps](https://www.google.com/maps?q=-6.2,106.8)'
+    vm.handleAiStream({ type: 'done', full_content: mdResponse })
+    vi.advanceTimersByTime(1000)
+    await wrapper.vm.$nextTick()
+
+    const link = wrapper.find('.markdown-content a')
+    expect(link.exists()).toBe(true)
+    expect(link.attributes('href')).toBe('https://www.google.com/maps?q=-6.2,106.8')
+    expect(link.attributes('target')).toBe('_blank')
+    expect(link.attributes('rel')).toBe('noopener noreferrer')
+  })
 })

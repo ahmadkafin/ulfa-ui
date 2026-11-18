@@ -399,9 +399,13 @@ export default {
         typeof rawText === 'object'
           ? rawText?.answer?.answer || rawText?.answer || rawText?.text || JSON.stringify(rawText)
           : String(rawText)
-      return marked(content, {
+      const html = marked(content, {
         breaks: true,
       })
+      return html.replace(
+        /<a\s+(?![^>]*\btarget=)([^>]+)>/gi,
+        '<a target="_blank" rel="noopener noreferrer" $1>',
+      )
     },
     scrollToBottom(force = false) {
       this.$nextTick(() => {
